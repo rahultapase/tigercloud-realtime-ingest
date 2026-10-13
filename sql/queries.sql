@@ -1,16 +1,14 @@
 -- Q1 Ingest summary + pipeline lag per symbol
 -- pipeline lag = ingested_at - time: from the moment the pipeline received a tick to the
 -- commit of its batch in Tiger Cloud, including the batching wait (at most --flush-seconds).
+-- ticks_per_min counts only minutes that have data.
 SELECT symbol,
-       count(*)                                   AS ticks,
-       min("time")                                AS first_tick,
-       max("time")                                AS last_tick,
-       round(count(*)::numeric / count(DISTINCT time_bucket('1 minute', "time")), 1)
-                                                  AS ticks_per_min,   -- per minute with data
-       round((percentile_cont(0.5)  WITHIN GROUP (ORDER BY extract(epoch FROM ingested_at - "time")))::numeric, 2)
-                                                  AS median_pipeline_lag_s,
-       round((percentile_cont(0.95) WITHIN GROUP (ORDER BY extract(epoch FROM ingested_at - "time")))::numeric, 2)
-                                                  AS p95_pipeline_lag_s
+       count(*) AS ticks,
+       min("time") AS first_tick,
+       max("time") AS last_tick,
+       round(count(*)::numeric / count(DISTINCT time_bucket('1 minute', "time")), 1) AS ticks_per_min,
+       round((percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM ingested_at - "time")))::numeric, 2) AS median_pipeline_lag_s,
+       round((percentile_cont(0.95) WITHIN GROUP (ORDER BY extract(epoch FROM ingested_at - "time")))::numeric, 2) AS p95_pipeline_lag_s
 FROM crypto_ticks
 GROUP BY symbol
 ORDER BY symbol;
